@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)"
+    ],
+    "additionalDirectories": [
+      "/Users/lucasculbertson/dev/stagecraft-web"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "linear-stagecraft"
+  ],
+  "disabledMcpjsonServers": [
+    "linear"
+  ]
+}

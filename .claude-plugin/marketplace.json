@@ -1,0 +1,19 @@
+{
+  "name": "stagecraft",
+  "owner": {
+    "name": "Lucas Culbertson",
+    "github": "lucasnad27"
+  },
+  "plugins": [
+    {
+      "name": "stagecraft",
+      "description": "Research, design, plan, implement, review. One skill, seven verbs, for any coding agent.",
+      "version": "0.1.0",
+      "source": "./",
+      "author": {
+        "name": "Lucas Culbertson",
+        "github": "lucasnad27"
+      }
+    }
+  ]
+}
