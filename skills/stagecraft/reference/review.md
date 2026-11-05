@@ -1,10 +1,14 @@
 # Review
 
-You are tasked with getting a change ready for review: commit any outstanding work, run the project's checks, open a pull request, and land a **review guide** that points human attention at what matters. You don't replace code review — you make it faster by saying where to look, anchored to the lines it's about.
+You are tasked with getting a change ready for review: commit any outstanding work, run the project's checks, open a pull request, and land a **run-through** that walks the author through the change in execution order plus a **review guide** that points human attention at what matters. You don't replace code review — you make it faster by saying where to look, anchored to the lines it's about.
 
 File writes are for the PR body, the review payload, and any source fix the user explicitly asks for during a walkthrough — never for unprompted changes.
 
 This is the final step of the research → design → plan → implement → review workflow. **Run it in a fresh context, not the one that implemented the change.** A reviewer that inherits the implementation transcript inherits its optimism.
+
+**The PR's job is to make sure the author understands the change before it ships**, and gets a chance to make a different call on any part of it. A diff in file order doesn't give them that. A **run-through** does: the change in the order it actually happens, one step at a time. Each step points at the code doing the work (`file:line`, or a few lines inline when the shape matters) and names any decision made there that the author might want to make differently. The author ticks each step once they understand it.
+
+Whether the author *runs* it depends on the change. When it has behavior someone has to see or operate later (a teammate driving a new tool, a flow whose failure modes are the point), each step becomes "do this → you see this", with the commands to start it. When it doesn't, the run-through traces the call path on paper. A line in the description that doesn't help someone understand, run, or decide something is fluff, so cut it.
 
 ## Project context
 
@@ -128,14 +132,39 @@ This is the work. Everything downstream is formatting.
 
 ### Step 5: Write the PR description
 
-**Under 60 lines**, not counting collapsed check output. If it's longer, the detail belongs in a stop.
+**Under 60 lines**, not counting collapsed check output, **and the run-through is the centre of it.** If it's longer, the detail belongs in a stop.
 
-```markdown
+**Build the run-through from the call path, not the file list.** Follow the change the way it executes: from the trigger (a command, a click, a request, a scheduled job) through each layer it touches to what comes out. Usually 4–8 steps. Each step carries:
+
+- **What happens**, in a sentence.
+- **Where**: `file:line` for the code doing it, or 2–6 lines inline when the shape of the code is the point (a middleware order, a config block, a schema). Prefer `file:line`. Inline only what a reader has to see to follow the step.
+- **The call made here**, when there was one: the choice, and the alternative someone might prefer. These are the places the author steps in, so don't bury them in stops alone.
+- When the step is runnable: **do this → you see this.**
+
+Cover the change's claims, not its happy path alone. For each thing the PR asserts (an error is recoverable, a retry replays, a build can't contain X), a step should show it happening, or show where it happens.
+
+**Rehearse every runnable step before you write it.** Run the commands and do the steps yourself against this branch, using **Commands** to start what needs starting, from a state someone else can reproduce: ports, processes, prerequisites, data to clear. Write down what you saw, not what the plan says should happen. A step you couldn't run (it needs a device, a credential, a deployed environment) says so on its line. Anything the rehearsal turned up that the author will hit — a port fallback, a missing prerequisite, a placeholder page — goes into the steps, not a footnote. Stop the processes you started when you're done.
+
+````markdown
 ## Summary
-[≤5 sentences: what this change does, why, and the approach. Link the issue the way Forge says to.]
+[≤3 sentences: what this does and why, in plain words. Link the issue the way Forge says to.]
 
 [Structural changes only: one tree diff, or a Mermaid sequence diagram if the forge
 renders Mermaid, ≤12 lines. Reuse the design doc's shape diff, updated to what landed.]
+
+## Run-through
+[Only when there's something to run: the commands, copy-pasteable, from a fresh checkout.]
+```sh
+[setup and run commands from Commands]
+```
+
+- [ ] **[What happens.]** `path/to/file.ext:40-58`. [Do this → you see this.] [The call made
+      here: X rather than Y, because Z.]
+- [ ] **[What happens.]** [The 2–6 lines inline, when their shape is the point.]
+...
+
+[The author ticks each step once they understand it, and runs it if it's runnable. Leave the
+boxes unticked; never tick them yourself.]
 
 ## Review guide (N stops)
 Each stop is an inline comment on the line it names.
@@ -149,9 +178,8 @@ The remaining N files are [generated migrations, import moves, copy tweaks].
 "Mechanical: <what it is>. Green on <the check>. Nothing here needs a second opinion." An empty
 or padded guide is worse than none.]
 
-## Test coverage
-**Tested:** [behavior] — `tests/path` · [behavior] — `tests/path`
-**Not tested:** [behavior] — [why]
+## Not tested
+[Behavior no test and no run-through step covers, and why. One line each.]
 
 ## Deferred
 [Work this PR cannot verify before merge — cloud-only surfaces, anything needing a deployed
@@ -163,9 +191,9 @@ sections; follow it.]
 <details><summary>[Check name]</summary>
 [Full output from each Step 3 check, one block per check.]
 </details>
-```
+````
 
-Everything else stays out. The mechanical files get **one line** at the end of the guide — not an inventory. A reviewer who wants the file list opens the Files tab. The numbering is the review order.
+Everything else stays out: no inventory of what's tested, no restating the plan. The mechanical files get **one line** at the end of the guide — not an inventory. A reviewer who wants the file list opens the Files tab. The numbering is the review order.
 
 **With `--no-stops`**, expand each numbered index line into its full stop text under the same heading, drop the "Each stop is an inline comment" line, and skip Step 7. The description gets longer; nothing else changes.
 
@@ -233,24 +261,27 @@ Four things to know:
 
 Report the review URL alongside the PR URL.
 
-### Step 8: Walk the PR with the author (optional)
+### Step 8: Take the author through it, then walk the stops
+
+**The run-through comes first.** Unless you're running unattended, offer to take the author through the **Run-through** steps before they review code line by line. Go one step at a time: open or quote the code it points at, say what happens there and what was decided, and pause on each call made so they can make it differently. For a runnable step, start the processes in background shells or hand them the commands; they do it, and you say what they should be seeing. A step that doesn't match what you rehearsed is a finding, so stop there and fix it or record it. They tick each box as it lands. Then move on to the stops.
 
 The guide you just posted is exactly the input a guided walkthrough needs — ordered stops, anchored to lines, each naming a claim to test. If **Integrations** names a walkthrough tool and someone is there to answer, project it into their terminal instead of leaving it in a browser tab.
 
 **Read that tool's file under `reference/integrations/` and follow it.** The shape is the same whatever the tool: the stops are already on the PR as review threads, you narrate, they drive, and anything you find becomes a commit on the open PR before another reviewer is asked to look.
 
-Before the first fix, know the baseline — test count and typecheck errors from **Commands**. The Test coverage section usually states it; if not, capture it now, because "nothing regressed" is only a claim you can make against a number you recorded.
+Before the first fix, know the baseline — test count and typecheck errors from **Commands**. Capture it now if Step 2 didn't already, because "nothing regressed" is only a claim you can make against a number you recorded.
 
 Offer it once and wait:
 
 ```
-PR is up: <url> — 7 stops posted as inline comments. Want to walk them?
-I'll narrate each one and we can fix anything we find before anyone else looks.
+PR is up: <url> — 6-step run-through, 7 stops posted as inline comments. Want to go through it?
+I'll take you through the run-through first, then narrate each stop
+and we can fix anything we find before anyone else looks.
 
 Open the PR in your walkthrough tool in another pane, or say "skip" and it's ready for review as-is.
 ```
 
-Skip straight to Step 9 if **Integrations** names no walkthrough tool, if the user declines, if the tool isn't on the PATH (say so once, don't belabor it), if the diff is trivially mechanical, or if you're running unattended.
+Skip the whole step if the user declines or you're running unattended. Skip just the stops walk — the run-through still happens — if **Integrations** names no walkthrough tool, if the tool isn't on the PATH (say so once, don't belabor it), or if the diff is trivially mechanical.
 
 ### Step 9: Reconcile
 
@@ -265,14 +296,15 @@ Only when Step 8 produced commits. Otherwise you're done — return the PR URL.
 
 ## Important Guidelines
 
-1. **Guide attention, don't find bugs.** This is navigation, not a verdict. The stop says what to decide; the human decides it.
-2. **A short guide is a good guide.** The measure is whether the author's attention went to the right place, never how much you found. If the honest answer is "this is fine, merge it", say that in a sentence and stop — you are not being paid by the stop, and an author who has to argue their way out of ten stops on a green token swap will stop running this skill.
-3. **A stop and its index line carry the same claim.** If a stop needs something the description doesn't say, the description is missing it — not the other way around.
-4. **Be specific about lines.** "Review auth.ts" is useless. A stop anchored to `auth.ts:52` naming what could go wrong is the whole product.
-5. **Mechanical doesn't mean unimportant** — it means it follows an established pattern and doesn't need creative review. It gets one line, not a section.
-6. **Works without metadata.** With no design doc or review metadata, build the stop list from the diff. Less precise, still useful.
-7. **Trust in-phase triage over reconstructed triage.** A metadata section headed `(reconstructed from the diff — not authored in-phase)` was written by an agent reading the diff, not the one that wrote the code. Check those claims against the diff before turning them into stops.
-8. **The project's checks are not optional.** They run on every PR, including someone else's branch, and before anything is pushed.
-9. **Confirm before outward-facing or irreversible actions** — committing, pushing, creating the PR, posting the review. The guide itself is cheap; these are not.
-10. **The walkthrough edits source only on request.** When the user does ask for a fix, verify it against the pre-walk baseline, commit it separately, and push it so the session can see it.
-11. **Match the repo's conventions** — commit style, PR title format, issue linking. **Commits** and **Forge** record them; read recent history when they're silent.
+1. **Understanding before shipping.** The author should be able to explain the change in execution order and say where they'd have made a different call. The run-through is the deliverable; the stops come second.
+2. **Guide attention, don't find bugs.** This is navigation, not a verdict. The stop says what to decide; the human decides it.
+3. **A short guide is a good guide.** The measure is whether the author's attention went to the right place, never how much you found. If the honest answer is "this is fine, merge it", say that in a sentence and stop — you are not being paid by the stop, and an author who has to argue their way out of ten stops on a green token swap will stop running this skill.
+4. **A stop and its index line carry the same claim.** If a stop needs something the description doesn't say, the description is missing it — not the other way around.
+5. **Be specific about lines.** "Review auth.ts" is useless. A stop anchored to `auth.ts:52` naming what could go wrong is the whole product.
+6. **Mechanical doesn't mean unimportant** — it means it follows an established pattern and doesn't need creative review. It gets one line, not a section.
+7. **Works without metadata.** With no design doc or review metadata, build the stop list from the diff. Less precise, still useful.
+8. **Trust in-phase triage over reconstructed triage.** A metadata section headed `(reconstructed from the diff — not authored in-phase)` was written by an agent reading the diff, not the one that wrote the code. Check those claims against the diff before turning them into stops.
+9. **The project's checks are not optional.** They run on every PR, including someone else's branch, and before anything is pushed.
+10. **Confirm before outward-facing or irreversible actions** — committing, pushing, creating the PR, posting the review. The guide itself is cheap; these are not.
+11. **The walkthrough edits source only on request.** When the user does ask for a fix, verify it against the pre-walk baseline, commit it separately, and push it so the session can see it.
+12. **Match the repo's conventions** — commit style, PR title format, issue linking. **Commits** and **Forge** record them; read recent history when they're silent.
