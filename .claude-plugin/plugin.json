@@ -1,0 +1,11 @@
+{
+  "name": "stagecraft",
+  "version": "0.1.0",
+  "description": "Research, design, plan, implement, review. One skill, seven verbs, for any coding agent. Built on HumanLayer's research-plan-implement.",
+  "author": {
+    "name": "Lucas Culbertson",
+    "github": "lucasnad27"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/lucasnad27/stagecraft"
+}
